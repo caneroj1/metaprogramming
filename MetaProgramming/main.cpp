@@ -10,6 +10,31 @@
 #include <functional>
 #include <assert.h>
 
+namespace containers {
+
+template <typename L, typename R>
+struct PAIR { };
+
+struct FST {};
+struct SND {};
+
+template <typename P, typename F>
+struct GET { };
+
+template <typename L, typename R>
+struct GET<PAIR<L, R>, FST> {
+    typedef L result_type;
+    result_type result = L::result_type;
+};
+
+template <typename L, typename R>
+struct GET<PAIR<L, R>, SND> {
+    typedef R result_type;
+    result_type result = R::result;
+};
+    
+} // namespace containers
+
 namespace enumerals {
 
 struct ZERO {
@@ -28,6 +53,41 @@ typedef SUCC<ONE>  TWO;
 typedef SUCC<TWO>  THREE;
 
 // so on..
+
+struct SLIDE {};
+
+template <typename F, typename Arg>
+struct EVAL {};
+
+template <typename L, typename R>
+struct EVAL<SLIDE, containers::PAIR<L, R> > {
+    typedef containers::PAIR<R, SUCC<R> > result_type;
+};
+
+template <typename N, typename F, typename X>
+struct REPEAT {};
+
+template <typename F, typename X>
+struct REPEAT<ZERO, F, X> {
+    typedef X result_type;
+    result_type result = X::result;
+};
+
+template <typename N, typename F, typename X>
+struct REPEAT<SUCC<N>, F, X> {
+    typedef typename REPEAT<N, F, typename EVAL<F, X>::result_type >::result_type result_type;
+    result_type result = result_type::result;
+};
+
+template <typename N>
+struct DECREMENT {
+    typedef typename containers::GET<
+        typename REPEAT<N, SLIDE, containers::PAIR<ZERO, ZERO> >::result_type,
+        containers::FST
+    >::result_type result_type;
+
+    result_type result = result_type::result;
+};
 
 } // namespace enumerals
 
@@ -67,6 +127,7 @@ struct EQUALS {
 int main(int argc, const char * argv[]) {
     using namespace enumerals;
     using namespace logic;
+    using namespace containers;
 
     typedef SUCC<TWO> THREE;
     assert(THREE::result == 3);
@@ -87,6 +148,26 @@ int main(int argc, const char * argv[]) {
                         SUCC<THREE>,
                         TWO>::result_type FOUR;
     assert(FOUR::result == 4);
+
+    typedef PAIR<THREE, FOUR> THREE_AND_FOUR;
+    typedef typename GET<THREE_AND_FOUR, FST>::result_type FIRST;
+    assert(FIRST::result == 3);
+
+    typedef DECREMENT<SUCC<SUCC<FOUR> > >::result_type FIVE;
+    assert(FIVE::result == 6 - 1);
+
+   typedef GET<typename EVAL<
+                    SLIDE,
+                    typename EVAL<
+                        SLIDE,
+                        PAIR<ZERO, ZERO>
+                    >::result_type
+                >::result_type,
+                FST>::result_type DEC_TWO;
+    assert(DEC_TWO::result == 1);
+
+    typedef DECREMENT<TWO>::result_type DEC_TWO_V2;
+    assert(DEC_TWO_V2::result == 1);
 
     return 0;
 }
