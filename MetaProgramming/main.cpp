@@ -9,6 +9,7 @@
 #include <iostream>
 #include <functional>
 #include <assert.h>
+#include <type_traits>
 
 namespace containers {
 
@@ -138,9 +139,12 @@ int main(int argc, const char * argv[]) {
                         TWO,
                         THREE>::result_type COND_EVAL;
     assert(COND_EVAL::result == 2);
+    static_assert(std::is_same<COND_EVAL, TWO>::value,
+                  "if (1 == 1) { 2 } else { 3 }");
 
     typedef typename EQUALS<ONE, ONE>::result_type EQ;
     assert(EQ::result == true);
+    static_assert(std::is_same<EQ, TRUE>::value, "1 == 1");
 
     typedef typename IF<
                         EQUALS<THREE,
@@ -148,15 +152,20 @@ int main(int argc, const char * argv[]) {
                         SUCC<THREE>,
                         TWO>::result_type FOUR;
     assert(FOUR::result == 4);
+    static_assert(std::is_same<FOUR, SUCC<THREE>>::value,
+                  "if (3 == 2 + 1) { 3 + 1 } else { 2 }");
 
     typedef PAIR<THREE, FOUR> THREE_AND_FOUR;
     typedef typename GET<THREE_AND_FOUR, FST>::result_type FIRST;
     assert(FIRST::result == 3);
+    static_assert(std::is_same<FIRST, THREE>::value, "fst (3,4) == 3");
 
     typedef DECREMENT<SUCC<SUCC<FOUR> > >::result_type FIVE;
     assert(FIVE::result == 6 - 1);
+    static_assert(std::is_same<FIVE, SUCC<FOUR>>::value,
+                  "(4 + 1 + 1) - 1 == 5");
 
-   typedef GET<typename EVAL<
+    typedef GET<typename EVAL<
                     SLIDE,
                     typename EVAL<
                         SLIDE,
@@ -165,9 +174,11 @@ int main(int argc, const char * argv[]) {
                 >::result_type,
                 FST>::result_type DEC_TWO;
     assert(DEC_TWO::result == 1);
+    static_assert(std::is_same<DEC_TWO, ONE>::value, "2 - 1 == 1");
 
     typedef DECREMENT<TWO>::result_type DEC_TWO_V2;
     assert(DEC_TWO_V2::result == 1);
+    static_assert(std::is_same<DEC_TWO_V2, ONE>::value, "2 - 1 == 1");
 
     return 0;
 }
