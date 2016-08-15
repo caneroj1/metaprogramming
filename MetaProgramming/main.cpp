@@ -6,8 +6,6 @@
 //  Copyright © 2016 jcanero. All rights reserved.
 //
 
-#include <iostream>
-#include <functional>
 #include <assert.h>
 #include <type_traits>
 
@@ -88,6 +86,104 @@ struct DECREMENT {
     >::result_type result_type;
 
     result_type result = result_type::result;
+};
+
+struct INC {};
+struct DEC {};
+
+template <typename N>
+struct enumerals::EVAL<INC, N> {
+    typedef SUCC<N> result_type;
+};
+
+template <typename N>
+struct enumerals::EVAL<DEC, N> {
+    typedef typename DECREMENT<N>::result_type result_type;
+};
+
+template <typename X, typename Y>
+struct ADD {
+    typedef typename REPEAT<X, INC, Y>::result_type result_type;
+};
+
+template <typename X, typename Y>
+struct SUBTRACT {
+    typedef typename REPEAT<Y, DEC, X>::result_type result_type;
+};
+
+template <typename X, typename Y>
+struct MULTIPLY {
+    typedef typename ADD<X,
+                typename MULTIPLY<X,
+                                    typename DECREMENT<Y>::result_type
+                         >::result_type
+                     >::result_type result_type;
+};
+
+template <typename X>
+struct MULTIPLY<X, ZERO> {
+    typedef ZERO result_type;
+};
+
+template <typename Y>
+struct MULTIPLY<ZERO, Y> {
+    typedef ZERO result_type;
+};
+
+template <typename X>
+struct MULTIPLY<X, ONE> {
+    typedef X result_type;
+};
+
+template <typename Y>
+struct MULTIPLY<ONE, Y> {
+    typedef Y result_type;
+};
+
+template <typename X, typename Y>
+struct POWER {
+    typedef typename MULTIPLY<X,
+                              typename POWER<X,
+                                             typename DECREMENT<Y>::result_type
+                              >::result_type
+                     >::result_type result_type;
+};
+
+template <typename X>
+struct POWER<X, ZERO> {
+    typedef ONE result_type;
+};
+
+template <typename Y>
+struct POWER<ZERO, Y> {
+    typedef ZERO result_type;
+};
+
+template <typename X>
+struct POWER<X, ONE> {
+    typedef X result_type;
+};
+
+template <typename Y>
+struct POWER<ONE, Y> {
+    typedef ONE result_type;
+};
+
+template <typename N>
+struct FACTORIAL {
+    typedef typename MULTIPLY<N,
+                              typename FACTORIAL<typename DECREMENT<N>::result_type>::result_type
+                             >::result_type result_type;
+};
+
+template <>
+struct FACTORIAL<ONE> {
+    typedef ONE result_type;
+};
+
+template <>
+struct FACTORIAL<ZERO> {
+    typedef ZERO result_type;
 };
 
 } // namespace enumerals
@@ -179,6 +275,51 @@ int main(int argc, const char * argv[]) {
     typedef DECREMENT<TWO>::result_type DEC_TWO_V2;
     assert(DEC_TWO_V2::result == 1);
     static_assert(std::is_same<DEC_TWO_V2, ONE>::value, "2 - 1 == 1");
+
+    typedef ADD<FIVE, THREE>::result_type EIGHT;
+    assert(EIGHT::result == 8);
+    static_assert(std::is_same<EIGHT, SUCC<SUCC<SUCC<FIVE>>>>::value,
+                  "5 + 3 == 8");
+
+    typedef ADD<THREE, FIVE>::result_type EIGHT_V2;
+    assert(EIGHT_V2::result == 8);
+    static_assert(std::is_same<EIGHT_V2, EIGHT>::value,
+                  "3 + 5 == 8");
+
+    typedef SUBTRACT<FIVE, THREE>::result_type FIVEMINUSTHREE;
+    assert(FIVEMINUSTHREE::result == 2);
+    static_assert(std::is_same<FIVEMINUSTHREE, TWO>::value,
+                  "5 - 3 == 2");
+
+    typedef MULTIPLY<FIVE, TWO>::result_type TEN;
+    assert(TEN::result == 10);
+    static_assert(std::is_same<TEN, ADD<FIVE, FIVE>::result_type>::value,
+                  "5 * 2 == 5 + 5");
+
+    typedef MULTIPLY<TWO, FIVE>::result_type TEN_V2;
+    assert(TEN_V2::result == 10);
+    static_assert(std::is_same<TEN_V2, TEN>::value,
+                  "2 * 5 == 5 * 2");
+
+    typedef POWER<TWO, FIVE>::result_type THIRTY_TWO;
+    assert(THIRTY_TWO::result == 32);
+    static_assert(std::is_same<THIRTY_TWO,
+                  MULTIPLY<TWO,
+                  typename MULTIPLY<TWO,
+                     typename MULTIPLY<TWO,
+                          typename MULTIPLY<TWO, TWO>::result_type
+                              >::result_type
+                     >::result_type
+                  >::result_type>::value,
+                  "2^5 == 2 * 2 * 2 * 2 * 2");
+
+    typedef FACTORIAL<THREE>::result_type FAC_THREE;
+    assert(FAC_THREE::result == 6);
+    static_assert(std::is_same<FAC_THREE,
+                               typename MULTIPLY<THREE,
+                                                 typename MULTIPLY<TWO, ONE>::result_type
+                                                 >::result_type>::value,
+                  "3! == 3 * 2 * 1");
 
     return 0;
 }
